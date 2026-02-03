@@ -1,0 +1,14 @@
+{
+  "name": "@salonbooker/widget",
+  "version": "1.0.0",
+  "description": "Embeddable booking widget for HairsalonX",
+  "main": "dist/widget.js",
+  "scripts": {
+    "build": "tsc && cp src/widget.css dist/",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
