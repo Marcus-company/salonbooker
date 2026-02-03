@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/bookingen", label: "Boekingen", icon: "📅" },
+  { href: "/admin/analytics", label: "Analytics", icon: "📈" },
   { href: "/admin/instellingen", label: "Instellingen", icon: "⚙️" },
 ];
 
