@@ -160,7 +160,7 @@ export default function AnalyticsPage() {
                   border: "1px solid #e2e8f0",
                   borderRadius: "8px",
                 }}
-                formatter={(value: number) => `€${value}`}
+                formatter={(value) => `€${value}`}
               />
               <Line
                 type="monotone"

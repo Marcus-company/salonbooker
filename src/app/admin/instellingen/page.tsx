@@ -23,7 +23,7 @@ const defaultServices = [
 
 export default function InstellingenPage() {
   const [hours, setHours] = useState(defaultHours);
-  const [services, setServices] = useState(defaultServices);
+  const [services] = useState(defaultServices);
   const [activeTab, setActiveTab] = useState("hours");
 
   return (
@@ -134,7 +134,7 @@ export default function InstellingenPage() {
           </div>
           
           <div className="divide-y divide-slate-200">
-            {services.map((service, index) => (
+            {services.map((service) => (
               <div key={service.name} className="py-4 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-slate-900">{service.name}</p>

@@ -1,4 +1,52 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
+
+// Force dynamic rendering for auth
+export const dynamic = 'force-dynamic'
+
 export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError('Ongeldige inloggegevens')
+        return
+      }
+
+      if (data.session) {
+        // Redirect based on role
+        const role = data.session.user.user_metadata?.role || 'staff'
+        if (role === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/admin/bookingen')
+        }
+        router.refresh()
+      }
+    } catch {
+      setError('Er is iets misgegaan. Probeer opnieuw.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
@@ -7,7 +55,13 @@ export default function LoginPage() {
           <p className="mt-2 text-slate-600">Admin Dashboard - HairsalonX</p>
         </div>
         
-        <form className="space-y-4" action="/admin">
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+        
+        <form className="space-y-4" onSubmit={handleLogin}>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700">
               Email
@@ -15,7 +69,9 @@ export default function LoginPage() {
             <input
               type="email"
               id="email"
-              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               className="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="josje@hairsalonx.nl"
             />
@@ -28,7 +84,9 @@ export default function LoginPage() {
             <input
               type="password"
               id="password"
-              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               placeholder="••••••••"
             />
@@ -36,9 +94,10 @@ export default function LoginPage() {
           
           <button
             type="submit"
-            className="w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Inloggen
+            {loading ? 'Inloggen...' : 'Inloggen'}
           </button>
         </form>
         

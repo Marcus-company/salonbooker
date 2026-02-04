@@ -1,14 +1,35 @@
 import Link from "next/link";
 import { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import LogoutButton from "./components/LogoutButton";
 
-const navItems = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/bookingen", label: "Boekingen", icon: "📅" },
-  { href: "/admin/analytics", label: "Analytics", icon: "📈" },
-  { href: "/admin/instellingen", label: "Instellingen", icon: "⚙️" },
-];
+// Force dynamic rendering for auth
+export const dynamic = 'force-dynamic'
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const supabase = createClient();
+  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    redirect("/");
+  }
+
+  const userRole = session.user.user_metadata?.role || "staff";
+  const userName = session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Gebruiker";
+  const userEmail = session.user.email || "";
+
+  // Define nav items based on role
+  const navItems = [
+    ...(userRole === "admin" ? [{ href: "/admin", label: "Dashboard", icon: "📊" }] : []),
+    { href: "/admin/bookingen", label: "Boekingen", icon: "📅" },
+    ...(userRole === "admin" ? [{ href: "/admin/analytics", label: "Analytics", icon: "📈" }] : []),
+    ...(userRole === "admin" ? [{ href: "/admin/instellingen", label: "Instellingen", icon: "⚙️" }] : []),
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
@@ -16,6 +37,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="p-6 border-b border-slate-200">
           <h1 className="text-xl font-bold text-slate-900">SalonBooker</h1>
           <p className="text-sm text-slate-500">HairsalonX Admin</p>
+          {userRole === "admin" && (
+            <span className="mt-2 inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">
+              Admin
+            </span>
+          )}
         </div>
         
         <nav className="flex-1 p-4 space-y-1">
@@ -31,16 +57,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-lg">
               👤
             </div>
-            <div>
-              <p className="font-medium text-slate-900">Josje</p>
-              <p className="text-sm text-slate-500">Eigenaar</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-slate-900 truncate">{userName}</p>
+              <p className="text-sm text-slate-500 truncate">{userEmail}</p>
             </div>
           </div>
+          <LogoutButton />
         </div>
       </aside>
       
