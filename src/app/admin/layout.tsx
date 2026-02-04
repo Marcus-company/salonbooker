@@ -25,7 +25,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   // Define nav items based on role
   const navItems = [
     ...(userRole === "admin" ? [{ href: "/admin", label: "Dashboard", icon: "📊" }] : []),
-    { href: "/admin/bookingen", label: "Boekingen", icon: "📅" },
+    { href: "/admin/bookingen", label: "Boekingen", icon: "📋" },
+    { href: "/admin/kalender", label: "Kalender", icon: "📅" },
+    ...(userRole === "admin" ? [{ href: "/admin/medewerkers", label: "Medewerkers", icon: "👥" }] : []),
     ...(userRole === "admin" ? [{ href: "/admin/analytics", label: "Analytics", icon: "📈" }] : []),
     ...(userRole === "admin" ? [{ href: "/admin/instellingen", label: "Instellingen", icon: "⚙️" }] : []),
   ];
