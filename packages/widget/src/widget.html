@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Boek een afspraak - HairsalonX</title>
   <link rel="stylesheet" href="widget.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div class="sb-widget">
@@ -14,52 +16,17 @@
       <p class="sb-subtitle">Kies een datum en tijd die jou uitkomt</p>
     </div>
 
+    <!-- Loading State -->
+    <div class="sb-loading" id="loading">
+      <div class="sb-spinner"></div>
+      <p>Laden...</p>
+    </div>
+
     <!-- Step 1: Service Selection -->
-    <div class="sb-step" id="step-1">
+    <div class="sb-step sb-step-hidden" id="step-1">
       <h2 class="sb-step-title">1. Kies een behandeling</h2>
-      <div class="sb-services">
-        <button class="sb-service-card" data-service="dames" data-duration="45" data-price="35">
-          <span class="sb-service-icon">✂️</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Knippen dames</span>
-            <span class="sb-service-meta">45 min • €35</span>
-          </div>
-        </button>
-        <button class="sb-service-card" data-service="heren" data-duration="30" data-price="25">
-          <span class="sb-service-icon">✂️</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Knippen heren</span>
-            <span class="sb-service-meta">30 min • €25</span>
-          </div>
-        </button>
-        <button class="sb-service-card" data-service="kinderen" data-duration="30" data-price="18">
-          <span class="sb-service-icon">✂️</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Knippen kinderen</span>
-            <span class="sb-service-meta">30 min • €18</span>
-          </div>
-        </button>
-        <button class="sb-service-card" data-service="fullcolor" data-duration="90" data-price="55">
-          <span class="sb-service-icon">🎨</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Full color</span>
-            <span class="sb-service-meta">90 min • €55</span>
-          </div>
-        </button>
-        <button class="sb-service-card" data-service="highlights" data-duration="120" data-price="65">
-          <span class="sb-service-icon">🎨</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Highlights</span>
-            <span class="sb-service-meta">120 min • €65</span>
-          </div>
-        </button>
-        <button class="sb-service-card" data-service="balayage" data-duration="150" data-price="85">
-          <span class="sb-service-icon">🎨</span>
-          <div class="sb-service-info">
-            <span class="sb-service-name">Balayage</span>
-            <span class="sb-service-meta">150 min • €85</span>
-          </div>
-        </button>
+      <div class="sb-services" id="services-list">
+        <!-- Services loaded from Supabase -->
       </div>
     </div>
 
@@ -79,16 +46,7 @@
       
       <h3 class="sb-time-title">Beschikbare tijden</h3>
       <div class="sb-time-slots" id="time-slots">
-        <button class="sb-time-slot">09:00</button>
-        <button class="sb-time-slot">09:30</button>
-        <button class="sb-time-slot sb-time-slot-busy">10:00</button>
-        <button class="sb-time-slot">10:30</button>
-        <button class="sb-time-slot">11:00</button>
-        <button class="sb-time-slot sb-time-slot-busy">11:30</button>
-        <button class="sb-time-slot">13:30</button>
-        <button class="sb-time-slot">14:00</button>
-        <button class="sb-time-slot">14:30</button>
-        <button class="sb-time-slot">15:00</button>
+        <!-- Time slots loaded from Supabase -->
       </div>
     </div>
 
@@ -116,7 +74,7 @@
     </div>
 
     <!-- Summary -->
-    <div class="sb-summary" id="summary">
+    <div class="sb-summary sb-step-hidden" id="summary">
       <h3 class="sb-summary-title">Samenvatting</h3>
       <div class="sb-summary-item">
         <span class="sb-summary-label">Behandeling:</span>
@@ -137,7 +95,7 @@
     </div>
 
     <!-- Actions -->
-    <div class="sb-actions">
+    <div class="sb-actions" id="actions">
       <button class="sb-btn sb-btn-secondary" id="btn-back" style="display: none;">Terug</button>
       <button class="sb-btn sb-btn-primary" id="btn-next">Volgende</button>
     </div>
