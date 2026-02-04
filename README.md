@@ -58,6 +58,32 @@ npm run dev
 npm run build
 ```
 
+## 🗄️ Database Setup
+
+### Supabase Setup
+
+1. Create a new Supabase project at https://supabase.com
+2. Go to SQL Editor → New Query
+3. Run the migrations in order:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_seed_data.sql`
+
+### Environment Variables
+
+Create `.env.local` with your Supabase credentials:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Required Tables
+
+- **salons** - Salon information
+- **services** - Available services/treatments
+- **staff** - Staff members with roles (admin/staff)
+- **bookings** - Customer appointments
+
 ## 🔗 Links
 
 - **Widget Repo:** `packages/widget`
