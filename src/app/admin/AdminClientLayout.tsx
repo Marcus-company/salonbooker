@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import LogoutButton from './components/LogoutButton'
+import InstallPrompt from '@/components/InstallPrompt'
 
 interface NavItem {
   href: string
@@ -138,6 +139,9 @@ export default function AdminClientLayout({
       <main className="flex-1 overflow-auto pt-16 md:pt-0">
         {children}
       </main>
+      
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   )
 }
