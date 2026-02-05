@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Booking {
   id: string
@@ -76,9 +77,7 @@ export default function BookingenPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Laden...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Boekingen laden..." />
       </div>
     )
   }
