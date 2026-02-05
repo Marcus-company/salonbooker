@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Booking {
   id: string
@@ -23,8 +24,10 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchBookings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate])
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fetchBookings = async () => {
     setLoading(true)
     
@@ -97,6 +100,8 @@ export default function CalendarPage() {
           + Nieuwe afspraak
         </button>
       </div>
+
+      {loading && <LoadingSpinner text="Afspraken laden..." />}
 
       {/* Calendar Header */}
       <div className="bg-white rounded-t-xl shadow-sm border border-slate-200 border-b-0 p-4 flex items-center justify-between">

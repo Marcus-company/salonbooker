@@ -11,15 +11,15 @@ export async function GET() {
   // Check Supabase connection
   try {
     const supabase = createClient()
-    const { data, error } = await supabase.from('salons').select('count').single()
+    const { error: dbError } = await supabase.from('salons').select('count').single()
     
-    if (error) {
-      checks.checks.supabase = { status: 'error', message: error.message }
+    if (dbError) {
+      checks.checks.supabase = { status: 'error', message: dbError.message }
       checks.status = 'error'
     } else {
       checks.checks.supabase = { status: 'ok' }
     }
-  } catch (error) {
+  } catch {
     checks.checks.supabase = { status: 'error', message: 'Connection failed' }
     checks.status = 'error'
   }
@@ -29,7 +29,7 @@ export async function GET() {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     checks.checks.auth = { status: 'ok', message: session ? 'Session available' : 'No session' }
-  } catch (error) {
+  } catch {
     checks.checks.auth = { status: 'error', message: 'Auth check failed' }
   }
 
