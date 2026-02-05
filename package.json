@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npm run test:api && npm run test:db && npm run test:e2e",
+    "test:api": "bash ./tests/api/run-api-tests.sh",
+    "test:api:httpie": "bash ./tests/api/httpie-tests.sh",
+    "test:db": "bash ./tests/db/run-db-tests.sh",
+    "test:db:sql": "bash ./tests/db/sql-tests.sh",
+    "test:e2e": "bash ./tests/e2e/run-e2e-tests.sh",
+    "test:setup": "bash ./tests/setup-test-db.sh",
+    "test:cleanup": "bash ./tests/cleanup-test-data.sh",
+    "test:mock": "bash ./tests/generate-mock-data.sh",
+    "test:all": "npm run test:setup && npm run test && npm run test:cleanup",
+    "validate": "bash scripts/validate.sh"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

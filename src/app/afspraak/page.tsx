@@ -157,7 +157,7 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 py-6 md:py-12 px-4">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
