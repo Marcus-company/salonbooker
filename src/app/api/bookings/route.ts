@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendEmail } from '@/lib/email/emailService'
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,11 +51,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
     
-    // Check authentication
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check authentication (optional for public bookings)
+    // const { data: { session } } = await supabase.auth.getSession()
+    // if (!session) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const body = await request.json()
     
@@ -79,7 +80,92 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ booking: data[0] }, { status: 201 })
+    const booking = data[0]
+
+    // Send confirmation email if email is provided
+    if (body.customer_email) {
+      try {
+        await sendEmail('booking_confirmation', {
+          customerName: body.customer_name,
+          customerEmail: body.customer_email,
+          serviceName: body.service_name,
+          date: body.booking_date,
+          time: body.booking_time
+        })
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError)
+        // Don't fail the request if email fails
+      }
+    }
+
+    return NextResponse.json({ booking }, { status: 201 })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = createClient()
+    
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, status, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing booking ID' }, { status: 400 })
+    }
+
+    // Get current booking to check for email
+    const { data: currentBooking } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({ status, ...updates })
+      .eq('id', id)
+      .select()
+
+    if (error) {
+      console.error('API Error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Send status update email
+    if (currentBooking?.customer_email && status && status !== currentBooking.status) {
+      try {
+        if (status === 'confirmed') {
+          await sendEmail('booking_confirmed', {
+            customerName: currentBooking.customer_name,
+            customerEmail: currentBooking.customer_email,
+            serviceName: currentBooking.service_name,
+            date: currentBooking.booking_date,
+            time: currentBooking.booking_time
+          })
+        } else if (status === 'cancelled') {
+          await sendEmail('booking_cancelled', {
+            customerName: currentBooking.customer_name,
+            customerEmail: currentBooking.customer_email,
+            serviceName: currentBooking.service_name,
+            date: currentBooking.booking_date,
+            time: currentBooking.booking_time
+          })
+        }
+      } catch (emailError) {
+        console.error('Failed to send status email:', emailError)
+      }
+    }
+
+    return NextResponse.json({ booking: data[0] })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
