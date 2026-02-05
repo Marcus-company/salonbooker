@@ -25,53 +25,64 @@ export function rateLimit(
   request: NextRequest,
   options: Partial<RateLimitOptions> = {}
 ): { success: boolean; limit: number; remaining: number; resetTime: number } {
-  const config = { ...DEFAULT_OPTIONS, ...options }
-  
-  // Get client IP
-  const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
-  const key = `${ip}:${request.nextUrl.pathname}`
-  
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  
-  // Clean up expired entries
-  if (entry && entry.resetTime < now) {
-    rateLimitMap.delete(key)
-  }
-  
-  // Get or create entry
-  const current = rateLimitMap.get(key)
-  if (!current) {
-    rateLimitMap.set(key, {
-      count: 1,
-      resetTime: now + config.windowMs
-    })
+  try {
+    const config = { ...DEFAULT_OPTIONS, ...options }
+    
+    // Get client IP
+    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+    const key = `${ip}:${request.nextUrl.pathname}`
+    
+    const now = Date.now()
+    const entry = rateLimitMap.get(key)
+    
+    // Clean up expired entries
+    if (entry && entry.resetTime < now) {
+      rateLimitMap.delete(key)
+    }
+    
+    // Get or create entry
+    const current = rateLimitMap.get(key)
+    if (!current) {
+      rateLimitMap.set(key, {
+        count: 1,
+        resetTime: now + config.windowMs
+      })
+      return {
+        success: true,
+        limit: config.maxRequests,
+        remaining: config.maxRequests - 1,
+        resetTime: now + config.windowMs
+      }
+    }
+    
+    // Check if limit exceeded
+    if (current.count >= config.maxRequests) {
+      return {
+        success: false,
+        limit: config.maxRequests,
+        remaining: 0,
+        resetTime: current.resetTime
+      }
+    }
+    
+    // Increment count
+    current.count++
+    
     return {
       success: true,
       limit: config.maxRequests,
-      remaining: config.maxRequests - 1,
-      resetTime: now + config.windowMs
-    }
-  }
-  
-  // Check if limit exceeded
-  if (current.count >= config.maxRequests) {
-    return {
-      success: false,
-      limit: config.maxRequests,
-      remaining: 0,
+      remaining: config.maxRequests - current.count,
       resetTime: current.resetTime
     }
-  }
-  
-  // Increment count
-  current.count++
-  
-  return {
-    success: true,
-    limit: config.maxRequests,
-    remaining: config.maxRequests - current.count,
-    resetTime: current.resetTime
+  } catch (error) {
+    console.error('Rate limit calculation error:', error)
+    // Fail open - allow request if we can't determine rate limit
+    return {
+      success: true,
+      limit: DEFAULT_OPTIONS.maxRequests,
+      remaining: DEFAULT_OPTIONS.maxRequests - 1,
+      resetTime: Date.now() + DEFAULT_OPTIONS.windowMs
+    }
   }
 }
 
@@ -81,30 +92,39 @@ export function withRateLimit(
   options: Partial<RateLimitOptions> = {}
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
-    const result = rateLimit(request, options)
-    
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Too many requests', retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000) },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': result.limit.toString(),
-            'X-RateLimit-Remaining': result.remaining.toString(),
-            'X-RateLimit-Reset': result.resetTime.toString(),
-            'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString()
+    try {
+      const result = rateLimit(request, options)
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { error: 'Too many requests', retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000) },
+          {
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': result.limit.toString(),
+              'X-RateLimit-Remaining': result.remaining.toString(),
+              'X-RateLimit-Reset': result.resetTime.toString(),
+              'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString()
+            }
           }
-        }
+        )
+      }
+      
+      const response = await handler(request)
+      
+      // Add rate limit headers
+      response.headers.set('X-RateLimit-Limit', result.limit.toString())
+      response.headers.set('X-RateLimit-Remaining', result.remaining.toString())
+      response.headers.set('X-RateLimit-Reset', result.resetTime.toString())
+      
+      return response
+    } catch (error) {
+      console.error('Rate limiter error:', error)
+      // Return 500 only for actual server errors, not rate limit violations
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
       )
     }
-    
-    const response = await handler(request)
-    
-    // Add rate limit headers
-    response.headers.set('X-RateLimit-Limit', result.limit.toString())
-    response.headers.set('X-RateLimit-Remaining', result.remaining.toString())
-    response.headers.set('X-RateLimit-Reset', result.resetTime.toString())
-    
-    return response
   }
 }
