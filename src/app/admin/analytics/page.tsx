@@ -56,15 +56,15 @@ export default function AnalyticsPage() {
   const [period, setPeriod] = useState("week");
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Analytics</h1>
-          <p className="text-slate-600">Inzichten in je salon prestaties</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Analytics</h1>
+          <p className="text-slate-600 text-sm md:text-base">Inzichten in je salon prestaties</p>
         </div>
         
         {/* Period filter */}
-        <div className="flex gap-2 bg-white rounded-lg p-1 border border-slate-200">
+        <div className="flex gap-2 bg-white rounded-lg p-1 border border-slate-200 overflow-x-auto">
           {["vandaag", "week", "maand"].map((p) => (
             <button
               key={p}
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6 mb-6 md:mb-8">
         <KpiCard
           label="Totale omzet"
           value={`€${kpiData.totalRevenue}`}
@@ -121,10 +121,10 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
         {/* Bookings per day */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-3 md:mb-4">
             Boekingen per dag
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -145,8 +145,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Revenue trend */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-3 md:mb-4">
             Omzet trend
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -174,10 +174,10 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Service distribution */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-3 md:mb-4">
             Behandelingen verdeling
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -198,14 +198,14 @@ export default function AnalyticsPage() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {serviceData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm text-slate-600">
+                <span className="text-xs md:text-sm text-slate-600">
                   {item.name} ({item.value}%)
                 </span>
               </div>
@@ -214,8 +214,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Monthly overview */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-base md:text-lg font-semibold text-slate-900 mb-3 md:mb-4">
             Maandelijks overzicht
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -253,18 +253,18 @@ function KpiCard({
   positive: boolean;
 }) {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-slate-500 text-sm">{label}</span>
-        <span className="text-2xl">{icon}</span>
+    <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-slate-200">
+      <div className="flex items-center justify-between mb-1 md:mb-2">
+        <span className="text-slate-500 text-xs md:text-sm">{label}</span>
+        <span className="text-lg md:text-2xl">{icon}</span>
       </div>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
+      <p className="text-lg md:text-2xl font-bold text-slate-900">{value}</p>
       <p
-        className={`text-sm font-medium ${
+        className={`text-xs md:text-sm font-medium ${
           positive ? "text-green-600" : "text-red-600"
         }`}
       >
-        {change} vs vorige periode
+        {change} <span className="hidden sm:inline">vs vorige periode</span>
       </p>
     </div>
   );
