@@ -10,6 +10,20 @@ export async function middleware(req: NextRequest) {
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('X-XSS-Protection', '1; mode=block')
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  
+  // Content Security Policy
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self'",
+    "connect-src 'self' https://*.supabase.co",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ')
+  res.headers.set('Content-Security-Policy', csp)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

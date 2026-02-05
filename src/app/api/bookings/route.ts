@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/emailService'
+import { withRateLimit } from '@/lib/rateLimit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,7 +48,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+// Rate limit: 5 bookings per minute per IP
+const POSTHandler = async (request: NextRequest) => {
   try {
     const supabase = createClient()
     
@@ -65,6 +67,15 @@ export async function POST(request: NextRequest) {
       if (!body[field]) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 })
       }
+    }
+
+    // Additional validation
+    if (body.customer_phone && !/^\+?[\d\s\-\(\)]{8,}$/.test(body.customer_phone)) {
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
+    if (body.customer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.customer_email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
     const { data, error } = await supabase
@@ -104,6 +115,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const POST = withRateLimit(POSTHandler, {
+  maxRequests: 5,
+  windowMs: 60 * 1000 // 1 minute
+})
 
 export async function PATCH(request: NextRequest) {
   try {
