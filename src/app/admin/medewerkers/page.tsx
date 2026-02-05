@@ -114,11 +114,11 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Medewerkers</h1>
-          <p className="text-slate-600">Beheer salon personeel</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Medewerkers</h1>
+          <p className="text-slate-600 text-sm md:text-base">Beheer salon personeel</p>
         </div>
         <button 
           onClick={() => {
@@ -126,39 +126,39 @@ export default function StaffPage() {
             setFormData({ name: '', email: '', phone: '', role: 'staff', bio: '', is_active: true })
             setShowAddModal(true)
           }}
-          className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
         >
           + Nieuwe medewerker
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-sm text-slate-500">Totaal</p>
-          <p className="text-2xl font-bold text-slate-900">{staff.length}</p>
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+        <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200">
+          <p className="text-xs md:text-sm text-slate-500">Totaal</p>
+          <p className="text-xl md:text-2xl font-bold text-slate-900">{staff.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-sm text-slate-500">Actief</p>
-          <p className="text-2xl font-bold text-green-600">{staff.filter(s => s.is_active).length}</p>
+        <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200">
+          <p className="text-xs md:text-sm text-slate-500">Actief</p>
+          <p className="text-xl md:text-2xl font-bold text-green-600">{staff.filter(s => s.is_active).length}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-          <p className="text-sm text-slate-500">Admins</p>
-          <p className="text-2xl font-bold text-purple-600">{staff.filter(s => s.role === 'admin').length}</p>
+        <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200">
+          <p className="text-xs md:text-sm text-slate-500">Admins</p>
+          <p className="text-xl md:text-2xl font-bold text-purple-600">{staff.filter(s => s.role === 'admin').length}</p>
         </div>
       </div>
 
       {/* Staff grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {staff.map((member) => (
-          <div key={member.id} className={`bg-white rounded-xl shadow-sm border ${member.is_active ? 'border-slate-200' : 'border-slate-200 opacity-60'} p-6`}>
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-2xl">
+          <div key={member.id} className={`bg-white rounded-xl shadow-sm border ${member.is_active ? 'border-slate-200' : 'border-slate-200 opacity-60'} p-4 md:p-6`}>
+            <div className="flex items-start justify-between mb-3 md:mb-4">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-200 flex items-center justify-center text-xl md:text-2xl flex-shrink-0">
                   👤
                 </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">{member.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-slate-900 truncate">{member.name}</h3>
                   <span className={`inline-block px-2 py-1 text-xs rounded ${
                     member.role === 'admin' 
                       ? 'bg-purple-100 text-purple-700' 
@@ -169,25 +169,25 @@ export default function StaffPage() {
                 </div>
               </div>
               {!member.is_active && (
-                <span className="px-2 py-1 text-xs bg-slate-100 text-slate-600 rounded">Inactief</span>
+                <span className="px-2 py-1 text-xs bg-slate-100 text-slate-600 rounded flex-shrink-0">Inactief</span>
               )}
             </div>
 
-            <div className="space-y-2 text-sm">
-              <p className="text-slate-600">📧 {member.email}</p>
+            <div className="space-y-1 md:space-y-2 text-sm">
+              <p className="text-slate-600 truncate">📧 {member.email}</p>
               {member.phone && <p className="text-slate-600">📞 {member.phone}</p>}
             </div>
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-3 md:mt-4 flex gap-2">
               <button 
                 onClick={() => startEdit(member)}
-                className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                className="flex-1 px-3 py-2 text-xs md:text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
               >
                 Bewerk
               </button>
               <button 
                 onClick={() => toggleActive(member.id, member.is_active)}
-                className={`flex-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                className={`flex-1 px-3 py-2 text-xs md:text-sm rounded-lg transition-colors ${
                   member.is_active 
                     ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                     : 'bg-green-100 text-green-700 hover:bg-green-200'
