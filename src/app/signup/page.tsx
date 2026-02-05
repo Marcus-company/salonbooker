@@ -35,6 +35,26 @@ export default function SignupPage() {
       }
 
       if (data.user) {
+        // Get the salon ID
+        const { data: salonData } = await supabase
+          .from('salons')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1)
+          .single()
+        
+        // Create staff record linked to auth user
+        if (salonData?.id) {
+          await supabase.from('staff').insert([{
+            salon_id: salonData.id,
+            auth_user_id: data.user.id,
+            name: name,
+            email: email,
+            role: 'staff',
+            is_active: true,
+          }])
+        }
+        
         setSuccess(true)
       }
     } catch {

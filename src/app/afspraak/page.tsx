@@ -42,20 +42,38 @@ export default function BookingPage() {
   const fetchServicesAndStaff = async () => {
     setLoading(true)
     
-    // Fetch services
-    const { data: servicesData } = await supabase
-      .from('services')
-      .select('*')
+    // Fetch salon first (get the first active salon)
+    const { data: salonData } = await supabase
+      .from('salons')
+      .select('id')
       .eq('is_active', true)
+      .limit(1)
+      .single()
     
-    // Fetch staff
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('is_active', true)
+    const salonId = salonData?.id
+    
+    if (salonId) {
+      // Fetch services for this salon
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('*')
+        .eq('salon_id', salonId)
+        .eq('is_active', true)
+      
+      // Fetch staff for this salon
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('salon_id', salonId)
+        .eq('is_active', true)
 
-    setServices(servicesData || [])
-    setStaff(staffData || [])
+      setServices(servicesData || [])
+      setStaff(staffData || [])
+    } else {
+      // Fallback: no salon configured yet
+      setServices([])
+      setStaff([])
+    }
     setLoading(false)
   }
 
