@@ -31,14 +31,17 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        // Redirect based on role
+        // Hard redirect to admin - use window.location for reliability
         const role = data.session.user.user_metadata?.role || 'staff'
-        if (role === 'admin') {
-          router.push('/admin')
+        const targetUrl = role === 'admin' ? '/admin' : '/admin/bookingen'
+        
+        // Force navigation
+        if (typeof window !== 'undefined') {
+          window.location.href = targetUrl
         } else {
-          router.push('/admin/bookingen')
+          router.push(targetUrl)
+          router.refresh()
         }
-        router.refresh()
       }
     } catch {
       setError('Er is iets misgegaan. Probeer opnieuw.')
