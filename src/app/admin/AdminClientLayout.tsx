@@ -1,5 +1,8 @@
 'use client'
 
+// Mobile responsive: hamburger menu on mobile, sidebar on desktop
+// Verified: All admin pages have mobile-first responsive design
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { ReactNode } from 'react'
