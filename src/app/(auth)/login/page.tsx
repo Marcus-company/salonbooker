@@ -115,6 +115,12 @@ export default function LoginPage() {
             </a>
           </p>
         </div>
+        
+        <div className="text-center pt-4 border-t border-slate-200">
+          <a href="/" className="text-sm text-slate-500 hover:text-slate-900">
+            ← Terug naar website
+          </a>
+        </div>
       </div>
     </div>
   );

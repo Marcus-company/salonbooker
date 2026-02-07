@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Webhook {
@@ -113,7 +112,7 @@ export default function WebhooksPage() {
         const error = await response.json()
         alert(`Test mislukt: ${error.error}`)
       }
-    } catch (error) {
+    } catch {
       alert('Test failed')
     }
     setTestingWebhook(null)

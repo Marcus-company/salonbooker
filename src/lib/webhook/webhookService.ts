@@ -118,7 +118,7 @@ export async function processWebhookDeliveries(
     for (const delivery of deliveries) {
       results.processed++
       
-      const webhook = delivery.webhooks as { url: string; secret: string }
+      const webhook = delivery.webhooks as unknown as { url: string; secret: string }
       
       if (!webhook?.url || !webhook?.secret) {
         // Mark as failed if webhook config is missing

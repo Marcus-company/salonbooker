@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/webhooks/process - Get processing stats
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient()
     

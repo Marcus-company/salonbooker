@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { createWebhook, testWebhook } from '@/lib/webhook/webhookService'
+import { createWebhook } from '@/lib/webhook/webhookService'
 
 // GET /api/webhooks - List webhooks for the salon
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient()
     

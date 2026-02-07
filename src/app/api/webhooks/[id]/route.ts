@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { testWebhook } from '@/lib/webhook/webhookService'
 
 // GET /api/webhooks/[id] - Get webhook details
 export async function GET(
