@@ -18,12 +18,37 @@ interface Booking {
 
 type CalendarView = 'day' | 'week' | 'month'
 
+interface Staff {
+  id: string
+  name: string
+}
+
+interface Service {
+  id: string
+  name: string
+  duration: string
+}
+
 export default function CalendarPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [view, setView] = useState<CalendarView>('month')
+  
+  // Quick add modal state
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [staff, setStaff] = useState<Staff[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [newBooking, setNewBooking] = useState({
+    customer_name: '',
+    customer_phone: '',
+    service_id: '',
+    staff_id: '',
+    booking_date: '',
+    booking_time: '09:00',
+    notes: '',
+  })
 
   useEffect(() => {
     fetchBookings()
@@ -72,6 +97,51 @@ export default function CalendarPage() {
       setBookings(data || [])
     }
     setLoading(false)
+  }
+
+  const fetchStaffAndServices = async () => {
+    const [{ data: staffData }, { data: servicesData }] = await Promise.all([
+      supabase.from('staff').select('id, name').eq('is_active', true),
+      supabase.from('services').select('id, name, duration').eq('is_active', true)
+    ])
+    setStaff(staffData || [])
+    setServices(servicesData || [])
+  }
+
+  const openQuickAdd = () => {
+    fetchStaffAndServices()
+    setNewBooking({
+      customer_name: '',
+      customer_phone: '',
+      service_id: '',
+      staff_id: '',
+      booking_date: currentDate.toISOString().split('T')[0],
+      booking_time: '09:00',
+      notes: '',
+    })
+    setShowQuickAdd(true)
+  }
+
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const service = services.find(s => s.id === newBooking.service_id)
+    const staffMember = staff.find(s => s.id === newBooking.staff_id)
+    
+    const { error } = await supabase.from('bookings').insert([{
+      ...newBooking,
+      service_name: service?.name || 'Onbekend',
+      service_duration: service?.duration || '',
+      staff_name: staffMember?.name || 'Geen voorkeur',
+      status: 'confirmed',
+    }])
+    
+    if (error) {
+      console.error('Error creating booking:', error)
+    } else {
+      setShowQuickAdd(false)
+      fetchBookings()
+    }
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -202,8 +272,11 @@ export default function CalendarPage() {
               </button>
             ))}
           </div>
-          <button className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm">
-            + Nieuw
+          <button 
+            onClick={openQuickAdd}
+            className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm"
+          >
+            + Snel toevoegen
           </button>
         </div>
       </div>
@@ -478,6 +551,130 @@ export default function CalendarPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Quick Add Modal */}
+      {showQuickAdd && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-slate-900">Afspraak toevoegen</h2>
+                <button 
+                  onClick={() => setShowQuickAdd(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleQuickAdd} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Klantnaam *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newBooking.customer_name}
+                    onChange={(e) => setNewBooking({ ...newBooking, customer_name: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Naam van klant"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Telefoon *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={newBooking.customer_phone}
+                    onChange={(e) => setNewBooking({ ...newBooking, customer_phone: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="06-12345678"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Datum *</label>
+                    <input
+                      type="date"
+                      required
+                      value={newBooking.booking_date}
+                      onChange={(e) => setNewBooking({ ...newBooking, booking_date: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Tijd *</label>
+                    <input
+                      type="time"
+                      required
+                      value={newBooking.booking_time}
+                      onChange={(e) => setNewBooking({ ...newBooking, booking_time: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Dienst *</label>
+                  <select
+                    required
+                    value={newBooking.service_id}
+                    onChange={(e) => setNewBooking({ ...newBooking, service_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Selecteer dienst</option>
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.duration})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Medewerker</label>
+                  <select
+                    value={newBooking.staff_id}
+                    onChange={(e) => setNewBooking({ ...newBooking, staff_id: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Geen voorkeur</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Notities</label>
+                  <textarea
+                    value={newBooking.notes}
+                    onChange={(e) => setNewBooking({ ...newBooking, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Extra informatie..."
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAdd(false)}
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+                  >
+                    Toevoegen
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>
