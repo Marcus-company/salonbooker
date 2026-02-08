@@ -21,7 +21,23 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Ensure proper mobile text sizing */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Minimum 16px font size to prevent iOS zoom on inputs */
+    font-size: 16px;
+  }
+  /* Ensure touch targets are at least 48px */
+  button, a, input, select, textarea {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  /* Better line height for mobile readability */
+  p, li {
+    line-height: 1.6;
   }
 }
