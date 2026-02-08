@@ -105,6 +105,9 @@ const POSTHandler = async (request: NextRequest) => {
     // Add end_time if provided, otherwise calculate from duration
     if (body.end_time) {
       insertData.end_time = body.end_time
+    } else {
+      // Default end_time = 1 hour after start
+      insertData.end_time = '15:00'
     }
 
     const { data, error } = await supabase
