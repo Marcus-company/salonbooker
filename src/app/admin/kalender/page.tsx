@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import QuickBookingModal from './QuickBookingModal'
 
 interface Booking {
   id: string
@@ -24,6 +25,9 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [view, setView] = useState<CalendarView>('month')
+  const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false)
+  const [quickBookingDate, setQuickBookingDate] = useState('')
+  const [quickBookingTime, setQuickBookingTime] = useState('')
 
   useEffect(() => {
     fetchBookings()
@@ -202,7 +206,14 @@ export default function CalendarPage() {
               </button>
             ))}
           </div>
-          <button className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm">
+          <button 
+            onClick={() => {
+              setQuickBookingDate(new Date().toISOString().split('T')[0])
+              setQuickBookingTime('')
+              setIsQuickBookingOpen(true)
+            }}
+            className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm"
+          >
             + Nieuw
           </button>
         </div>
@@ -302,7 +313,15 @@ export default function CalendarPage() {
                 })
                 
                 return (
-                  <div key={hour} className="flex">
+                  <div 
+                    key={hour} 
+                    className="flex cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => {
+                      setQuickBookingDate(currentDate.toISOString().split('T')[0])
+                      setQuickBookingTime(hourStr)
+                      setIsQuickBookingOpen(true)
+                    }}
+                  >
                     <div className="w-20 p-3 text-sm text-slate-500 border-r border-slate-200 bg-slate-50">
                       {hourStr}
                     </div>
@@ -311,12 +330,18 @@ export default function CalendarPage() {
                         <div 
                           key={booking.id}
                           className={`mb-1 p-2 rounded text-sm text-white ${statusColors[booking.status]}`}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <span className="font-medium">{booking.booking_time}</span> - {booking.customer_name}
                           <br />
                           <span className="text-xs opacity-90">{booking.service_name}</span>
                         </div>
                       ))}
+                      {hourBookings.length === 0 && (
+                        <div className="h-full flex items-center justify-center text-slate-300 text-sm">
+                          + Klik om afspraak te maken
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -363,12 +388,21 @@ export default function CalendarPage() {
                       })
                       
                       return (
-                        <div key={dayIndex} className="p-1 min-h-[50px] border-r border-slate-100">
+                        <div 
+                          key={dayIndex} 
+                          className="p-1 min-h-[50px] border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                          onClick={() => {
+                            setQuickBookingDate(dayStr)
+                            setQuickBookingTime(formatHour(hour))
+                            setIsQuickBookingOpen(true)
+                          }}
+                        >
                           {hourBookings.map((booking) => (
                             <div 
                               key={booking.id}
                               className={`mb-1 p-1 rounded text-xs text-white truncate ${statusColors[booking.status]}`}
                               title={`${booking.booking_time} - ${booking.customer_name}`}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               {booking.booking_time} {booking.customer_name}
                             </div>
@@ -446,15 +480,48 @@ export default function CalendarPage() {
         )}
       </div>
 
+      {/* Quick Booking Modal */}
+      <QuickBookingModal
+        isOpen={isQuickBookingOpen}
+        onClose={() => setIsQuickBookingOpen(false)}
+        initialDate={quickBookingDate}
+        initialTime={quickBookingTime}
+        onSuccess={fetchBookings}
+      />
+
       {/* Selected Date Detail */}
       {selectedDate && (
         <div className="mt-6 md:mt-8 bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
-            Afspraken op {selectedDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Afspraken op {selectedDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </h3>
+            <button
+              onClick={() => {
+                setQuickBookingDate(selectedDate.toISOString().split('T')[0])
+                setQuickBookingTime('')
+                setIsQuickBookingOpen(true)
+              }}
+              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+            >
+              + Nieuwe afspraak
+            </button>
+          </div>
           
           {getBookingsForDate(selectedDate.getDate()).length === 0 ? (
-            <p className="text-slate-500">Geen afspraken voor deze dag</p>
+            <div className="text-center py-8">
+              <p className="text-slate-500 mb-4">Geen afspraken voor deze dag</p>
+              <button
+                onClick={() => {
+                  setQuickBookingDate(selectedDate.toISOString().split('T')[0])
+                  setQuickBookingTime('')
+                  setIsQuickBookingOpen(true)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                + Afspraak toevoegen
+              </button>
+            </div>
           ) : (
             <div className="space-y-3">
               {getBookingsForDate(selectedDate.getDate()).map((booking) => (
