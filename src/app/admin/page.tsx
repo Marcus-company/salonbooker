@@ -110,7 +110,7 @@ export default function AdminDashboard() {
         <p className="text-slate-600 text-sm md:text-base">Welkom terug, Josje!</p>
       </div>
       
-      {/* Stats - 2 cols mobile, 4 cols desktop */}
+      {/* Stats - 2 cols mobile, 4 cols desktop - FORCE REDEPLOY */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         {statsConfig.map((stat) => (
           <div key={stat.label} className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
