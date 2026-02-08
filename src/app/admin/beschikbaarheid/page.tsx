@@ -38,12 +38,23 @@ export default function AvailabilityPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [usingLocalStorage, setUsingLocalStorage] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'offline'>('offline')
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAvailability()
-  }, [])
+    
+    // Try to sync with database periodically
+    const syncInterval = setInterval(() => {
+      if (usingLocalStorage && userId) {
+        attemptBackgroundSync()
+      }
+    }, 30000) // Try every 30 seconds
+    
+    return () => clearInterval(syncInterval)
+  }, [usingLocalStorage, userId])
 
-  const fetchAvailability = async () => {
+  const fetchAvailability = async (retries = 3) => {
     setLoading(true)
     
     // Get current user
@@ -52,16 +63,29 @@ export default function AvailabilityPage() {
       setLoading(false)
       return
     }
+    
+    setUserId(session.user.id)
 
-    // Try to get from database first
-    const { data: staffData, error } = await supabase
-      .from('staff')
-      .select('id, availability')
-      .eq('auth_user_id', session.user.id)
-      .single()
-
-    if (error) {
-      console.log('Staff record not found, checking localStorage...')
+    // Try to get from database with retries
+    let staffData = null
+    let dbError = null
+    
+    for (let i = 0; i < retries; i++) {
+      const result = await supabase
+        .from('staff')
+        .select('id, availability')
+        .eq('auth_user_id', session.user.id)
+        .single()
+      
+      if (!result.error) {
+        staffData = result.data
+        break
+      }
+      
+      dbError = result.error
+      if (i < retries - 1) {
+        await new Promise(r => setTimeout(r, 1000 * (i + 1))) // Exponential backoff
+      }
     }
 
     if (staffData?.availability) {
@@ -73,6 +97,7 @@ export default function AvailabilityPage() {
       })
       setSlots(mergedSlots)
       setUsingLocalStorage(false)
+      setSyncStatus('synced')
     } else {
       // Fall back to localStorage
       const localKey = `availability_${session.user.id}`
@@ -85,19 +110,50 @@ export default function AvailabilityPage() {
             return saved || defaultSlot
           })
           setSlots(mergedSlots)
-          setUsingLocalStorage(true)
-        } catch {
-          setUsingLocalStorage(true)
-        }
-      } else {
-        setUsingLocalStorage(true)
+        } catch {}
       }
+      setUsingLocalStorage(true)
+      setSyncStatus(dbError ? 'offline' : 'pending')
     }
 
     setLoading(false)
   }
+  
+  const attemptBackgroundSync = async () => {
+    if (!userId) return
+    
+    const localKey = `availability_${userId}`
+    const localData = localStorage.getItem(localKey)
+    if (!localData) return
+    
+    try {
+      const slotsToSync = JSON.parse(localData) as AvailabilitySlot[]
+      
+      // Get staff record
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .single()
 
-  const saveAvailability = async () => {
+      if (staffData?.id) {
+        const { error } = await supabase
+          .from('staff')
+          .update({ availability: slotsToSync })
+          .eq('id', staffData.id)
+
+        if (!error) {
+          setUsingLocalStorage(false)
+          setSyncStatus('synced')
+          console.log('Background sync successful')
+        }
+      }
+    } catch (err) {
+      console.log('Background sync failed:', err)
+    }
+  }
+
+  const saveAvailability = async (retries = 3) => {
     setSaving(true)
     setSaved(false)
 
@@ -107,40 +163,58 @@ export default function AvailabilityPage() {
       return
     }
 
-    // Get staff record
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('auth_user_id', session.user.id)
-      .single()
-
-    let savedToDb = false
-
-    if (staffData?.id) {
-      // Try to save to database first
-      const { error } = await supabase
-        .from('staff')
-        .update({ availability: slots })
-        .eq('id', staffData.id)
-
-      if (!error) {
-        savedToDb = true
-        setUsingLocalStorage(false)
-      } else {
-        console.error('Database save failed, falling back to localStorage:', error)
-      }
-    }
-
-    // Always save to localStorage as backup
+    // Always save to localStorage immediately as backup
     const localKey = `availability_${session.user.id}`
     localStorage.setItem(localKey, JSON.stringify(slots))
 
-    if (savedToDb || !staffData?.id) {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+    // Try to save to database with retries
+    let savedToDb = false
+    let lastError = null
+
+    for (let i = 0; i < retries; i++) {
+      // Get staff record (fresh each retry)
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('auth_user_id', session.user.id)
+        .single()
+
+      if (staffData?.id) {
+        const { error } = await supabase
+          .from('staff')
+          .update({ availability: slots })
+          .eq('id', staffData.id)
+
+        if (!error) {
+          savedToDb = true
+          setUsingLocalStorage(false)
+          setSyncStatus('synced')
+          break
+        } else {
+          lastError = error
+          if (i < retries - 1) {
+            await new Promise(r => setTimeout(r, 1000 * (i + 1)))
+          }
+        }
+      } else {
+        break // No staff record, can't save to DB
+      }
     }
 
+    if (!savedToDb) {
+      console.error('Database save failed after retries:', lastError)
+      setUsingLocalStorage(true)
+      setSyncStatus('offline')
+    }
+
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
     setSaving(false)
+  }
+
+  const forceSync = async () => {
+    await attemptBackgroundSync()
+    await fetchAvailability()
   }
 
   const updateSlot = (day: string, updates: Partial<AvailabilitySlot>) => {
@@ -169,17 +243,45 @@ export default function AvailabilityPage() {
       <div className="space-y-3 mb-6">
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-blue-800 text-sm">
-            💡 <strong>Tip:</strong> Klanten kunnen alleen boeken tijdens je beschikbare uren. 
+            💡 <strong>Tip:</strong> Klanten kunnen alleen boeken tijdens je beschikbare uren.
             Je pauze wordt automatisch geblokkeerd.
           </p>
         </div>
-        
-        {usingLocalStorage && (
+
+        {/* Sync Status */}
+        {syncStatus === 'synced' && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <p className="text-green-800 text-sm flex items-center gap-2">
+              🟢 <strong>Online:</strong> Je gegevens zijn gesynchroniseerd met de database.
+            </p>
+          </div>
+        )}
+
+        {syncStatus === 'pending' && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <p className="text-amber-800 text-sm">
-              ⚠️ <strong>Offline modus:</strong> Je gegevens worden lokaal opgeslagen. 
-              Ze zijn beschikbaar op dit apparaat totdat de database verbinding hersteld is.
+              🟡 <strong>Wachten op sync:</strong> Je gegevens zijn opgeslagen. Sync wordt automatisch geprobeerd...
             </p>
+            <button
+              onClick={forceSync}
+              className="mt-2 text-sm text-amber-700 underline hover:text-amber-900"
+            >
+              Nu synchroniseren
+            </button>
+          </div>
+        )}
+
+        {syncStatus === 'offline' && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-red-800 text-sm">
+              🔴 <strong>Offline:</strong> Database niet bereikbaar. Gegevens zijn lokaal opgeslagen.
+            </p>
+            <button
+              onClick={forceSync}
+              className="mt-2 text-sm text-red-700 underline hover:text-red-900"
+            >
+              Opnieuw proberen
+            </button>
           </div>
         )}
       </div>
