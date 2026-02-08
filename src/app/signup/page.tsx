@@ -35,7 +35,7 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        // Get the salon ID
+        // Get the salon ID (optional - signup works without salon)
         const { data: salonData } = await supabase
           .from('salons')
           .select('id')
@@ -43,7 +43,7 @@ export default function SignupPage() {
           .limit(1)
           .single()
         
-        // Create staff record linked to auth user
+        // Create staff record linked to auth user (if salon exists)
         if (salonData?.id) {
           await supabase.from('staff').insert([{
             salon_id: salonData.id,
@@ -55,6 +55,7 @@ export default function SignupPage() {
           }])
         }
         
+        // User created successfully - staff record optional
         setSuccess(true)
       }
     } catch {
