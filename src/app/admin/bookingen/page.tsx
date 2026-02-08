@@ -23,6 +23,8 @@ export default function BookingenPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'confirmed' | 'pending' | 'cancelled'>('all')
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null)
+  const [editForm, setEditForm] = useState<Partial<Booking>>({})
 
   useEffect(() => {
     fetchBookings()
@@ -54,6 +56,40 @@ export default function BookingenPage() {
       console.error('Error updating booking:', error)
     } else {
       setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b))
+    }
+  }
+
+  const openEditModal = (booking: Booking) => {
+    setEditingBooking(booking)
+    setEditForm({
+      customer_name: booking.customer_name,
+      customer_phone: booking.customer_phone,
+      service_name: booking.service_name,
+      booking_date: booking.booking_date,
+      booking_time: booking.booking_time,
+      notes: booking.notes || '',
+    })
+  }
+
+  const closeEditModal = () => {
+    setEditingBooking(null)
+    setEditForm({})
+  }
+
+  const saveEdit = async () => {
+    if (!editingBooking) return
+    
+    const { error } = await supabase
+      .from('bookings')
+      .update(editForm)
+      .eq('id', editingBooking.id)
+
+    if (error) {
+      console.error('Error updating booking:', error)
+      alert('Fout bij opslaan: ' + error.message)
+    } else {
+      setBookings(bookings.map(b => b.id === editingBooking.id ? { ...b, ...editForm } : b))
+      closeEditModal()
     }
   }
 
@@ -94,20 +130,22 @@ export default function BookingenPage() {
         </button>
       </div>
 
-      {/* Stats - Scrollable on mobile */}
-      <div className="flex gap-2 md:grid md:grid-cols-4 mb-6 overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+      {/* Stats - Professional cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
         {(['all', 'confirmed', 'pending', 'cancelled'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-shrink-0 p-3 md:p-4 rounded-xl border transition-colors text-left min-w-[100px] md:min-w-0 ${
+            className={`p-4 rounded-xl border-2 transition-all text-left ${
               filter === f 
-                ? 'bg-slate-900 text-white border-slate-900' 
-                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-lg' 
+                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300'
             }`}
           >
-            <p className="text-xs md:text-sm opacity-80">{f === 'all' ? 'Alle' : statusLabels[f]}</p>
-            <p className="text-xl md:text-2xl font-bold">
+            <p className={`text-xs md:text-sm font-medium ${filter === f ? 'text-slate-300' : 'text-slate-500'}`}>
+              {f === 'all' ? 'Alle boekingen' : statusLabels[f]}
+            </p>
+            <p className="text-2xl md:text-3xl font-bold mt-1">
               {f === 'all' ? bookings.length : bookings.filter(b => b.status === f).length}
             </p>
           </button>
@@ -171,7 +209,10 @@ export default function BookingenPage() {
                           Annuleer
                         </button>
                       )}
-                      <button className="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                      <button 
+                        onClick={() => openEditModal(booking)}
+                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+                      >
                         Bewerk
                       </button>
                     </div>
@@ -238,7 +279,10 @@ export default function BookingenPage() {
                   Annuleer
                 </button>
               )}
-              <button className="flex-1 px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+              <button 
+                onClick={() => openEditModal(booking)}
+                className="flex-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+              >
                 Bewerk
               </button>
             </div>
@@ -249,6 +293,96 @@ export default function BookingenPage() {
       {filteredBookings.length === 0 && (
         <div className="text-center py-12">
           <p className="text-slate-500">Geen boekingen gevonden</p>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingBooking && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-900">Boeking bewerken</h2>
+              <p className="text-slate-500 text-sm">Wijzig de gegevens van de afspraak</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Klantnaam</label>
+                <input
+                  type="text"
+                  value={editForm.customer_name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Telefoon</label>
+                <input
+                  type="tel"
+                  value={editForm.customer_phone || ''}
+                  onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Service</label>
+                <input
+                  type="text"
+                  value={editForm.service_name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, service_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Datum</label>
+                  <input
+                    type="date"
+                    value={editForm.booking_date || ''}
+                    onChange={(e) => setEditForm({ ...editForm, booking_date: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tijd</label>
+                  <input
+                    type="time"
+                    value={editForm.booking_time || ''}
+                    onChange={(e) => setEditForm({ ...editForm, booking_time: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notities</label>
+                <textarea
+                  value={editForm.notes || ''}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-slate-200 flex gap-3">
+              <button
+                onClick={closeEditModal}
+                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={saveEdit}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Opslaan
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
