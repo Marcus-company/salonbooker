@@ -91,13 +91,20 @@ const POSTHandler = async (request: NextRequest) => {
       status: body.status || 'pending',
       notes: body.notes || null,
       // Provide default for any staff-related fields
+      staff_name: body.staff_name || 'Geen voorkeur',
       staff_id: body.staff_id || null,
-      service_id: body.service_id || null
+      service_id: body.service_id || null,
+      salon_id: body.salon_id || null
     }
     
     // If database uses start_time instead of booking_time, map it
     if (body.booking_time) {
       insertData.start_time = body.booking_time
+    }
+    
+    // Add end_time if provided, otherwise calculate from duration
+    if (body.end_time) {
+      insertData.end_time = body.end_time
     }
 
     const { data, error } = await supabase
