@@ -78,12 +78,31 @@ const POSTHandler = async (request: NextRequest) => {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
+    // Database compatibility: ensure all NOT NULL columns have defaults
+    const insertData: any = {
+      customer_name: body.customer_name,
+      customer_phone: body.customer_phone,
+      customer_email: body.customer_email || null,
+      service_name: body.service_name,
+      service_duration: body.service_duration || '60 min',
+      service_price: body.service_price || 0,
+      booking_date: body.booking_date,
+      booking_time: body.booking_time,
+      status: body.status || 'pending',
+      notes: body.notes || null,
+      // Provide default for any staff-related fields
+      staff_id: body.staff_id || null,
+      service_id: body.service_id || null
+    }
+    
+    // If database uses start_time instead of booking_time, map it
+    if (body.booking_time) {
+      insertData.start_time = body.booking_time
+    }
+
     const { data, error } = await supabase
       .from('bookings')
-      .insert([{
-        ...body,
-        status: body.status || 'pending'
-      }])
+      .insert([insertData])
       .select()
 
     if (error) {
