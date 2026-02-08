@@ -28,10 +28,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: '/admin/kalender', label: 'Kalender', icon: '📅' },
     { href: '/admin/klanten', label: 'Klanten', icon: '👤' },
     { href: '/admin/beschikbaarheid', label: 'Mijn Beschikbaarheid', icon: '⏰' },
-    ...(userRole === 'admin' ? [{ href: '/admin/klanten', label: 'Klanten', icon: '👤' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/medewerkers', label: 'Medewerkers', icon: '👥' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/medewerkers/rooster', label: 'Medewerkers Rooster', icon: '📆' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/analytics', label: 'Analytics', icon: '📈' }] : []),
+    ...(userRole === 'admin' ? [{ href: '/admin/rapporten', label: 'Rapporten', icon: '📊' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/webhooks', label: 'Webhooks', icon: '🔗' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/instellingen', label: 'Instellingen', icon: '⚙️' }] : []),
   ]
