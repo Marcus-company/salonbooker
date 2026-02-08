@@ -16,26 +16,47 @@ interface Booking {
   notes?: string
 }
 
+type CalendarView = 'day' | 'week' | 'month'
+
 export default function CalendarPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [view, setView] = useState<CalendarView>('month')
 
   useEffect(() => {
     fetchBookings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate])
+  }, [currentDate, view])
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fetchBookings = async () => {
     setLoading(true)
     
-    // Get first and last day of current month
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    const firstDay = new Date(year, month, 1).toISOString().split('T')[0]
-    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    let firstDay: string
+    let lastDay: string
+    
+    if (view === 'day') {
+      // Single day view
+      firstDay = currentDate.toISOString().split('T')[0]
+      lastDay = firstDay
+    } else if (view === 'week') {
+      // Week view (Monday to Sunday)
+      const dayOfWeek = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1
+      const monday = new Date(currentDate)
+      monday.setDate(currentDate.getDate() - dayOfWeek)
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      firstDay = monday.toISOString().split('T')[0]
+      lastDay = sunday.toISOString().split('T')[0]
+    } else {
+      // Month view
+      const year = currentDate.getFullYear()
+      const month = currentDate.getMonth()
+      firstDay = new Date(year, month, 1).toISOString().split('T')[0]
+      lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    }
     
     const { data, error } = await supabase
       .from('bookings')
@@ -76,15 +97,8 @@ export default function CalendarPage() {
   const dayNames = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
   const dayNamesFull = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag']
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-    setSelectedDate(null)
-  }
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-    setSelectedDate(null)
-  }
+  const prevMonth = navigatePrev
+  const nextMonth = navigateNext
 
   const statusColors: Record<string, string> = {
     confirmed: 'bg-green-500',
@@ -98,6 +112,71 @@ export default function CalendarPage() {
     cancelled: 'bg-red-100 text-red-700',
   }
 
+  // Helper functions for different views
+  const getWeekDays = () => {
+    const dayOfWeek = currentDate.getDay() === 0 ? 6 : currentDate.getDay() - 1
+    const monday = new Date(currentDate)
+    monday.setDate(currentDate.getDate() - dayOfWeek)
+    
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(monday)
+      day.setDate(monday.getDate() + i)
+      return day
+    })
+  }
+
+  const getHours = () => {
+    return Array.from({ length: 13 }, (_, i) => i + 8) // 8:00 - 20:00
+  }
+
+  const formatHour = (hour: number) => {
+    return `${hour.toString().padStart(2, '0')}:00`
+  }
+
+  const getBookingPosition = (bookingTime: string) => {
+    const [hours, minutes] = bookingTime.split(':').map(Number)
+    return (hours - 8) * 60 + minutes // Minutes from 8:00
+  }
+
+  const navigatePrev = () => {
+    const newDate = new Date(currentDate)
+    if (view === 'day') {
+      newDate.setDate(currentDate.getDate() - 1)
+    } else if (view === 'week') {
+      newDate.setDate(currentDate.getDate() - 7)
+    } else {
+      newDate.setMonth(currentDate.getMonth() - 1)
+    }
+    setCurrentDate(newDate)
+    setSelectedDate(null)
+  }
+
+  const navigateNext = () => {
+    const newDate = new Date(currentDate)
+    if (view === 'day') {
+      newDate.setDate(currentDate.getDate() + 1)
+    } else if (view === 'week') {
+      newDate.setDate(currentDate.getDate() + 7)
+    } else {
+      newDate.setMonth(currentDate.getMonth() + 1)
+    }
+    setCurrentDate(newDate)
+    setSelectedDate(null)
+  }
+
+  const getHeaderTitle = () => {
+    if (view === 'day') {
+      return currentDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+    } else if (view === 'week') {
+      const weekDays = getWeekDays()
+      const start = weekDays[0].toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+      const end = weekDays[6].toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+      return `${start} - ${end}`
+    } else {
+      return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+    }
+  }
+
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
@@ -106,9 +185,27 @@ export default function CalendarPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Kalender</h1>
           <p className="text-slate-600 text-sm md:text-base">Bekijk en beheer afspraken</p>
         </div>
-        <button className="w-full sm:w-auto px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm md:text-base">
-          + Nieuwe afspraak
-        </button>
+        <div className="flex gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-slate-100 rounded-lg p-1">
+            {(['day', 'week', 'month'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  view === v 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {v === 'day' ? 'Dag' : v === 'week' ? 'Week' : 'Maand'}
+              </button>
+            ))}
+          </div>
+          <button className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm">
+            + Nieuw
+          </button>
+        </div>
       </div>
 
       {loading && <LoadingSpinner text="Afspraken laden..." />}
@@ -118,13 +215,13 @@ export default function CalendarPage() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
           {/* Mobile Calendar Header */}
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-lg">
+            <button onClick={navigatePrev} className="p-2 hover:bg-slate-100 rounded-lg">
               ←
             </button>
-            <h2 className="text-lg font-semibold text-slate-900">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            <h2 className="text-lg font-semibold text-slate-900 text-center">
+              {getHeaderTitle()}
             </h2>
-            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-lg">
+            <button onClick={navigateNext} className="p-2 hover:bg-slate-100 rounded-lg">
               →
             </button>
           </div>
@@ -173,80 +270,180 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Desktop: Calendar Grid */}
+      {/* Desktop Views */}
       <div className="hidden md:block">
         {/* Calendar Header */}
         <div className="bg-white rounded-t-xl shadow-sm border border-slate-200 border-b-0 p-4 flex items-center justify-between">
-          <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-lg">
+          <button onClick={navigatePrev} className="p-2 hover:bg-slate-100 rounded-lg">
             ←
           </button>
           <h2 className="text-xl font-semibold text-slate-900">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            {getHeaderTitle()}
           </h2>
-          <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-lg">
+          <button onClick={navigateNext} className="p-2 hover:bg-slate-100 rounded-lg">
             →
           </button>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="bg-white shadow-sm border border-slate-200 rounded-b-xl">
-          {/* Day names */}
-          <div className="grid grid-cols-7 border-b border-slate-200">
-            {dayNames.map(day => (
-              <div key={day} className="p-3 text-center text-sm font-semibold text-slate-600">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar days */}
-          <div className="grid grid-cols-7">
-            {/* Empty cells for days before month starts */}
-            {Array.from({ length: startingDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="min-h-[120px] border-b border-r border-slate-200 bg-slate-50" />
-            ))}
-
-            {/* Days of the month */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const dayBookings = getBookingsForDate(day)
-              const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString()
-              
-              return (
-                <div 
-                  key={day}
-                  onClick={() => setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))}
-                  className={`min-h-[120px] border-b border-r border-slate-200 p-2 cursor-pointer hover:bg-slate-50 transition-colors ${
-                    isToday ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
-                    {day}
-                  </div>
-                  
-                  {dayBookings.length > 0 && (
-                    <div className="space-y-1">
-                      {dayBookings.slice(0, 3).map((booking, idx) => (
+        {/* DAY VIEW */}
+        {view === 'day' && (
+          <div className="bg-white shadow-sm border border-slate-200 rounded-b-xl">
+            <div className="p-4 border-b border-slate-200">
+              <h3 className="font-semibold text-slate-900">
+                {currentDate.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-200">
+              {getHours().map((hour) => {
+                const hourStr = formatHour(hour)
+                const hourBookings = bookings.filter(b => {
+                  const bookingHour = parseInt(b.booking_time.split(':')[0])
+                  return bookingHour === hour
+                })
+                
+                return (
+                  <div key={hour} className="flex">
+                    <div className="w-20 p-3 text-sm text-slate-500 border-r border-slate-200 bg-slate-50">
+                      {hourStr}
+                    </div>
+                    <div className="flex-1 p-2 min-h-[60px]">
+                      {hourBookings.map((booking) => (
                         <div 
-                          key={idx}
-                          className={`text-xs px-2 py-1 rounded text-white truncate ${statusColors[booking.status]}`}
-                          title={`${booking.booking_time} - ${booking.customer_name}`}
+                          key={booking.id}
+                          className={`mb-1 p-2 rounded text-sm text-white ${statusColors[booking.status]}`}
                         >
-                          {booking.booking_time} {booking.customer_name}
+                          <span className="font-medium">{booking.booking_time}</span> - {booking.customer_name}
+                          <br />
+                          <span className="text-xs opacity-90">{booking.service_name}</span>
                         </div>
                       ))}
-                      {dayBookings.length > 3 && (
-                        <div className="text-xs text-slate-500 px-2">
-                          +{dayBookings.length - 3} meer
-                        </div>
-                      )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* WEEK VIEW */}
+        {view === 'week' && (
+          <div className="bg-white shadow-sm border border-slate-200 rounded-b-xl overflow-x-auto">
+            <div className="min-w-[800px]">
+              {/* Week header */}
+              <div className="grid grid-cols-8 border-b border-slate-200">
+                <div className="p-3 border-r border-slate-200 bg-slate-50"></div>
+                {getWeekDays().map((day, i) => {
+                  const isToday = new Date().toDateString() === day.toDateString()
+                  return (
+                    <div 
+                      key={i} 
+                      className={`p-3 text-center ${isToday ? 'bg-blue-50' : ''}`}
+                    >
+                      <p className="text-xs text-slate-500">{dayNames[i]}</p>
+                      <p className={`text-lg font-semibold ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>
+                        {day.getDate()}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Week grid */}
+              <div>
+                {getHours().map((hour) => (
+                  <div key={hour} className="grid grid-cols-8 border-b border-slate-200">
+                    <div className="p-2 text-sm text-slate-500 border-r border-slate-200 bg-slate-50">
+                      {formatHour(hour)}
+                    </div>
+                    {getWeekDays().map((day, dayIndex) => {
+                      const dayStr = day.toISOString().split('T')[0]
+                      const hourBookings = bookings.filter(b => {
+                        const bookingHour = parseInt(b.booking_time.split(':')[0])
+                        return b.booking_date === dayStr && bookingHour === hour
+                      })
+                      
+                      return (
+                        <div key={dayIndex} className="p-1 min-h-[50px] border-r border-slate-100">
+                          {hourBookings.map((booking) => (
+                            <div 
+                              key={booking.id}
+                              className={`mb-1 p-1 rounded text-xs text-white truncate ${statusColors[booking.status]}`}
+                              title={`${booking.booking_time} - ${booking.customer_name}`}
+                            >
+                              {booking.booking_time} {booking.customer_name}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MONTH VIEW */}
+        {view === 'month' && (
+          <div className="bg-white shadow-sm border border-slate-200 rounded-b-xl">
+            {/* Day names */}
+            <div className="grid grid-cols-7 border-b border-slate-200">
+              {dayNames.map(day => (
+                <div key={day} className="p-3 text-center text-sm font-semibold text-slate-600">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days */}
+            <div className="grid grid-cols-7">
+              {/* Empty cells for days before month starts */}
+              {Array.from({ length: startingDay }).map((_, i) => (
+                <div key={`empty-${i}`} className="min-h-[120px] border-b border-r border-slate-200 bg-slate-50" />
+              ))}
+
+              {/* Days of the month */}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const dayBookings = getBookingsForDate(day)
+                const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString()
+                
+                return (
+                  <div 
+                    key={day}
+                    onClick={() => setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day))}
+                    className={`min-h-[120px] border-b border-r border-slate-200 p-2 cursor-pointer hover:bg-slate-50 transition-colors ${
+                      isToday ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
+                      {day}
+                    </div>
+                    
+                    {dayBookings.length > 0 && (
+                      <div className="space-y-1">
+                        {dayBookings.slice(0, 3).map((booking, idx) => (
+                          <div 
+                            key={idx}
+                            className={`text-xs px-2 py-1 rounded text-white truncate ${statusColors[booking.status]}`}
+                            title={`${booking.booking_time} - ${booking.customer_name}`}
+                          >
+                            {booking.booking_time} {booking.customer_name}
+                          </div>
+                        ))}
+                        {dayBookings.length > 3 && (
+                          <div className="text-xs text-slate-500 px-2">
+                            +{dayBookings.length - 3} meer
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Selected Date Detail */}
