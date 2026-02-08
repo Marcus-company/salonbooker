@@ -37,6 +37,7 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [usingLocalStorage, setUsingLocalStorage] = useState(false)
 
   useEffect(() => {
     fetchAvailability()
@@ -52,12 +53,16 @@ export default function AvailabilityPage() {
       return
     }
 
-    // Get staff record
-    const { data: staffData } = await supabase
+    // Try to get from database first
+    const { data: staffData, error } = await supabase
       .from('staff')
       .select('id, availability')
       .eq('auth_user_id', session.user.id)
       .single()
+
+    if (error) {
+      console.log('Staff record not found, checking localStorage...')
+    }
 
     if (staffData?.availability) {
       // Merge with defaults to ensure all days exist
@@ -67,6 +72,26 @@ export default function AvailabilityPage() {
         return saved || defaultSlot
       })
       setSlots(mergedSlots)
+      setUsingLocalStorage(false)
+    } else {
+      // Fall back to localStorage
+      const localKey = `availability_${session.user.id}`
+      const localData = localStorage.getItem(localKey)
+      if (localData) {
+        try {
+          const savedSlots = JSON.parse(localData) as AvailabilitySlot[]
+          const mergedSlots = DEFAULT_SLOTS.map(defaultSlot => {
+            const saved = savedSlots.find(s => s.day === defaultSlot.day)
+            return saved || defaultSlot
+          })
+          setSlots(mergedSlots)
+          setUsingLocalStorage(true)
+        } catch {
+          setUsingLocalStorage(true)
+        }
+      } else {
+        setUsingLocalStorage(true)
+      }
     }
 
     setLoading(false)
@@ -89,19 +114,30 @@ export default function AvailabilityPage() {
       .eq('auth_user_id', session.user.id)
       .single()
 
+    let savedToDb = false
+
     if (staffData?.id) {
+      // Try to save to database first
       const { error } = await supabase
         .from('staff')
         .update({ availability: slots })
         .eq('id', staffData.id)
 
-      if (error) {
-        console.error('Error saving availability:', error)
-        alert('Fout bij opslaan: ' + error.message)
+      if (!error) {
+        savedToDb = true
+        setUsingLocalStorage(false)
       } else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        console.error('Database save failed, falling back to localStorage:', error)
       }
+    }
+
+    // Always save to localStorage as backup
+    const localKey = `availability_${session.user.id}`
+    localStorage.setItem(localKey, JSON.stringify(slots))
+
+    if (savedToDb || !staffData?.id) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
     }
 
     setSaving(false)
@@ -129,12 +165,23 @@ export default function AvailabilityPage() {
         </p>
       </div>
 
-      {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-        <p className="text-blue-800 text-sm">
-          💡 <strong>Tip:</strong> Klanten kunnen alleen boeken tijdens je beschikbare uren. 
-          Je pauze wordt automatisch geblokkeerd.
-        </p>
+      {/* Info Cards */}
+      <div className="space-y-3 mb-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <p className="text-blue-800 text-sm">
+            💡 <strong>Tip:</strong> Klanten kunnen alleen boeken tijdens je beschikbare uren. 
+            Je pauze wordt automatisch geblokkeerd.
+          </p>
+        </div>
+        
+        {usingLocalStorage && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-amber-800 text-sm">
+              ⚠️ <strong>Offline modus:</strong> Je gegevens worden lokaal opgeslagen. 
+              Ze zijn beschikbaar op dit apparaat totdat de database verbinding hersteld is.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Days List */}
