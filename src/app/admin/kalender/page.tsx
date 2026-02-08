@@ -97,9 +97,6 @@ export default function CalendarPage() {
   const dayNames = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
   const dayNamesFull = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag']
 
-  const prevMonth = navigatePrev
-  const nextMonth = navigateNext
-
   const statusColors: Record<string, string> = {
     confirmed: 'bg-green-500',
     pending: 'bg-amber-500',
@@ -163,6 +160,9 @@ export default function CalendarPage() {
     setCurrentDate(newDate)
     setSelectedDate(null)
   }
+  
+  const prevMonth = navigatePrev
+  const nextMonth = navigateNext
 
   const getHeaderTitle = () => {
     if (view === 'day') {
