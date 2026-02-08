@@ -97,7 +97,9 @@ const POSTHandler = async (request: NextRequest) => {
       // service_id is optional - don't include if not provided to avoid FK errors
       ...(body.service_id ? { service_id: body.service_id } : {}),
       // salon_id is optional - don't include if not provided to avoid FK errors  
-      ...(body.salon_id ? { salon_id: body.salon_id } : {})
+      ...(body.salon_id ? { salon_id: body.salon_id } : {}),
+      // Store multiple services as JSON string
+      ...(body.services_json ? { services_json: body.services_json } : {})
     }
     
     // If database uses start_time instead of booking_time, map it
