@@ -92,9 +92,12 @@ const POSTHandler = async (request: NextRequest) => {
       notes: body.notes || null,
       // Provide default for any staff-related fields
       staff_name: body.staff_name || 'Geen voorkeur',
-      staff_id: body.staff_id || null,
-      service_id: body.service_id || null,
-      salon_id: body.salon_id || null
+      // staff_id is optional - don't include if not provided to avoid FK errors
+      ...(body.staff_id ? { staff_id: body.staff_id } : {}),
+      // service_id is optional - don't include if not provided to avoid FK errors
+      ...(body.service_id ? { service_id: body.service_id } : {}),
+      // salon_id is optional - don't include if not provided to avoid FK errors  
+      ...(body.salon_id ? { salon_id: body.salon_id } : {})
     }
     
     // If database uses start_time instead of booking_time, map it
