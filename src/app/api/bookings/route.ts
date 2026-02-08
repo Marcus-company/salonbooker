@@ -79,7 +79,7 @@ const POSTHandler = async (request: NextRequest) => {
     }
 
     // Database compatibility: ensure all NOT NULL columns have defaults
-    const insertData: any = {
+    const insertData: Record<string, string | number | null> = {
       customer_name: body.customer_name,
       customer_phone: body.customer_phone,
       customer_email: body.customer_email || null,
