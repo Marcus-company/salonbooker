@@ -314,6 +314,53 @@ export default function LandingPage() {
             />
           </div>
 
+          {/* Google Maps */}
+          <div className="mt-12 bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="grid md:grid-cols-2">
+              <div className="p-6 md:p-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Waar vind je ons</h3>
+                <p className="text-slate-600 mb-4">
+                  Bezoek onze salon in het centrum van Roermond. 
+                  Gratis parkeergelegenheid beschikbaar.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📍</span>
+                    <div>
+                      <p className="font-medium text-slate-900">HairsalonX</p>
+                      <p className="text-slate-600">Hoofdstraat 123</p>
+                      <p className="text-slate-600">6041 AB Roermond</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="https://maps.google.com/?q=Hoofdstraat+123+6041+AB+Roermond"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    Route plannen in Google Maps →
+                  </Link>
+                </div>
+              </div>              
+              <div className="h-64 md:h-auto min-h-[300px] bg-slate-100 relative">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2482.927123456789!2d6.001234567890123!3d51.19512345678901!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNTHCsDExJzQyLjQiTiA2wrAwMCcwNi4wIkU!5e0!3m2!1snl!2snl!4v1234567890123!5m2!1snl!2snl"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0"
+                  title="Salon locatie"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* CTA */}
           <div className="mt-16 text-center bg-white rounded-2xl shadow-lg p-8 md:p-12">
             <h3 className="text-2xl md:text-3xl font-bold text-slate-900">
