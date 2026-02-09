@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from "next/link";
 import { supabase } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { SkeletonStats, SkeletonBookingCard, Skeleton } from '@/components/skeleton'
 
 interface Booking {
   id: string
@@ -98,7 +99,19 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="p-4 md:p-8">
-        <LoadingSpinner size="lg" text="Dashboard laden..." />
+        <div className="mb-6 md:mb-8">
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <SkeletonStats count={4} />
+        <div className="mt-6 md:mt-8 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4 md:p-6">
+          <Skeleton className="h-6 w-40 mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonBookingCard key={i} />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

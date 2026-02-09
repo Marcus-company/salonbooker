@@ -18,13 +18,15 @@ export default function SignupPage() {
     setError(null)
 
     try {
+      // Sign up with Supabase (email confirmation disabled - we'll handle it)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             name,
-            role: 'staff', // Default role for new accounts
+            role: 'staff',
           },
         },
       })
@@ -35,6 +37,27 @@ export default function SignupPage() {
       }
 
       if (data.user) {
+        // Send custom confirmation email via Resend
+        const confirmationUrl = `${window.location.origin}/auth/confirm?token=${data.user.confirmation_sent_at}&email=${encodeURIComponent(email)}`
+        
+        try {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'signup',
+              to: email,
+              data: {
+                name,
+                confirmationUrl: `${window.location.origin}/login?verified=true&email=${encodeURIComponent(email)}`,
+              },
+            }),
+          })
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError)
+          // Don't block signup if email fails
+        }
+
         // Get the salon ID (optional - signup works without salon)
         const { data: salonData } = await supabase
           .from('salons')

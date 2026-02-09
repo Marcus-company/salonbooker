@@ -3,6 +3,53 @@ import nextPwa from 'next-pwa'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  
+  // Performance optimizations
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
+  
+  // Compress responses
+  compress: true,
+  
+  // Optimize package imports
+  experimental: {
+    optimizePackageImports: ['recharts', '@supabase/supabase-js'],
+  },
+  
+  // Headers for performance
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+        ],
+      },
+      {
+        source: '/(.*).(js|css)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 const withPWA = nextPwa({
