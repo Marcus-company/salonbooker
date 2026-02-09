@@ -36,6 +36,11 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [view, setView] = useState<CalendarView>('month')
   
+  // Drag and drop state
+  const [draggedBooking, setDraggedBooking] = useState<Booking | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  
   // Quick add modal state
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [staff, setStaff] = useState<Staff[]>([])
@@ -144,6 +149,55 @@ export default function CalendarPage() {
     }
   }
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, booking: Booking) => {
+    setDraggedBooking(booking)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', booking.id)
+  }
+
+  const handleDragOver = (e: React.DragEvent, timeSlot: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDropTarget(timeSlot)
+  }
+
+  const handleDragLeave = () => {
+    setDropTarget(null)
+  }
+
+  const handleDrop = async (e: React.DragEvent, newTime: string) => {
+    e.preventDefault()
+    setDropTarget(null)
+    
+    if (!draggedBooking) return
+    
+    // Only allow drops within the same day for simplicity
+    const newBookingTime = newTime
+    
+    setSaving(true)
+    
+    const { error } = await supabase
+      .from('bookings')
+      .update({ booking_time: newBookingTime })
+      .eq('id', draggedBooking.id)
+    
+    if (error) {
+      console.error('Error updating booking time:', error)
+      alert('Fout bij verplaatsen van afspraak')
+    } else {
+      // Update local state
+      setBookings(prev => prev.map(b => 
+        b.id === draggedBooking.id 
+          ? { ...b, booking_time: newBookingTime }
+          : b
+      ))
+    }
+    
+    setDraggedBooking(null)
+    setSaving(false)
+  }
+
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth()
@@ -200,11 +254,6 @@ export default function CalendarPage() {
     return `${hour.toString().padStart(2, '0')}:00`
   }
 
-  const getBookingPosition = (bookingTime: string) => {
-    const [hours, minutes] = bookingTime.split(':').map(Number)
-    return (hours - 8) * 60 + minutes // Minutes from 8:00
-  }
-
   const navigatePrev = () => {
     const newDate = new Date(currentDate)
     if (view === 'day') {
@@ -253,7 +302,14 @@ export default function CalendarPage() {
       <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Kalender</h1>
-          <p className="text-slate-600 text-sm md:text-base">Bekijk en beheer afspraken</p>
+          <p className="text-slate-600 text-sm md:text-base">
+            Bekijk en beheer afspraken
+            {draggedBooking && (
+              <span className="ml-2 text-blue-600 font-medium animate-pulse">
+                → Sleep afspraak naar nieuw tijdstip
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           {/* View Toggle */}
@@ -282,6 +338,7 @@ export default function CalendarPage() {
       </div>
 
       {loading && <LoadingSpinner text="Afspraken laden..." />}
+      {saving && <LoadingSpinner text="Afspraak verplaatsen..." />}
 
       {/* Mobile: Day List View */}
       <div className="md:hidden mb-6">
@@ -358,13 +415,16 @@ export default function CalendarPage() {
           </button>
         </div>
 
-        {/* DAY VIEW */}
+        {/* DAY VIEW with Drag & Drop */}
         {view === 'day' && (
           <div className="bg-white shadow-sm border border-slate-200 rounded-b-xl">
-            <div className="p-4 border-b border-slate-200">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900">
                 {currentDate.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
               </h3>
+              <span className="text-sm text-slate-500">
+                💡 Sleep afspraken naar een ander tijdstip
+              </span>
             </div>
             <div className="divide-y divide-slate-200">
               {getHours().map((hour) => {
@@ -373,21 +433,35 @@ export default function CalendarPage() {
                   const bookingHour = parseInt(b.booking_time.split(':')[0])
                   return bookingHour === hour
                 })
+                const isDropTarget = dropTarget === hourStr
                 
                 return (
                   <div key={hour} className="flex">
                     <div className="w-20 p-3 text-sm text-slate-500 border-r border-slate-200 bg-slate-50">
                       {hourStr}
                     </div>
-                    <div className="flex-1 p-2 min-h-[60px]">
+                    <div 
+                      className={`flex-1 p-2 min-h-[60px] transition-colors ${
+                        isDropTarget ? 'bg-blue-100 border-2 border-blue-400 border-dashed' : ''
+                      }`}
+                      onDragOver={(e) => handleDragOver(e, hourStr)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, hourStr)}
+                    >
                       {hourBookings.map((booking) => (
                         <div 
                           key={booking.id}
-                          className={`mb-1 p-2 rounded text-sm text-white ${statusColors[booking.status]}`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, booking)}
+                          className={`mb-1 p-2 rounded text-sm text-white cursor-move hover:opacity-90 transition-opacity ${statusColors[booking.status]} ${
+                            draggedBooking?.id === booking.id ? 'opacity-50' : ''
+                          }`}
                         >
-                          <span className="font-medium">{booking.booking_time}</span> - {booking.customer_name}
-                          <br />
-                          <span className="text-xs opacity-90">{booking.service_name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs">⋮⋮</span>
+                            <span className="font-medium">{booking.booking_time}</span> - {booking.customer_name}
+                          </div>
+                          <span className="text-xs opacity-90 ml-5">{booking.service_name}</span>
                         </div>
                       ))}
                     </div>
@@ -436,7 +510,10 @@ export default function CalendarPage() {
                       })
                       
                       return (
-                        <div key={dayIndex} className="p-1 min-h-[50px] border-r border-slate-100">
+                        <div 
+                          key={dayIndex} 
+                          className="p-1 min-h-[50px] border-r border-slate-100"
+                        >
                           {hourBookings.map((booking) => (
                             <div 
                               key={booking.id}
@@ -605,6 +682,7 @@ export default function CalendarPage() {
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Tijd *</label>
                     <input
@@ -618,16 +696,18 @@ export default function CalendarPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Dienst *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Behandeling *</label>
                   <select
                     required
                     value={newBooking.service_id}
                     onChange={(e) => setNewBooking({ ...newBooking, service_id: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Selecteer dienst</option>
-                    {services.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.duration})</option>
+                    <option value="">Kies behandeling</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} ({service.duration} min)
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -651,9 +731,9 @@ export default function CalendarPage() {
                   <textarea
                     value={newBooking.notes}
                     onChange={(e) => setNewBooking({ ...newBooking, notes: e.target.value })}
-                    rows={3}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Extra informatie..."
+                    rows={3}
+                    placeholder="Eventuele bijzonderheden..."
                   />
                 </div>
 
