@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import InstagramGallery from '@/components/instagram/InstagramGallery';
 
 interface Service {
   id: string;
@@ -279,6 +280,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Instagram Gallery */}
+      <InstagramGallery />
 
       {/* Contact Section */}
       <section id="contact" className="py-16 md:py-24 bg-slate-50">
