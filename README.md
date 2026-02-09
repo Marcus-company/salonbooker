@@ -39,11 +39,11 @@ src/
 - ✅ Behandelingen beheer
 
 ### TODO
-- [ ] Supabase Auth integratie
-- [ ] Supabase database connectie
-- [ ] CRUD operaties voor boekingen
-- [ ] Email notificaties
-- [ ] Real-time updates
+- [x] Supabase Auth integratie ✅
+- [x] Supabase database connectie ✅
+- [x] CRUD operaties voor boekingen ✅
+- [x] Email notificaties (Resend) ✅
+- [x] Real-time updates ✅
 
 ## 🛠️ Development
 
