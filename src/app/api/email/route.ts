@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { sendEmail, checkEmailService } from '@/lib/email/resend';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 
 // Test email endpoint
 export async function POST(request: Request) {

@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
     
     // Unique customers
     const customerPhones = data.map(b => b.customer_phone);
-    const uniqueCustomers = [...new Set(customerPhones)];
+    const uniqueCustomers = Array.from(new Set(customerPhones));
     
     // Count returning customers (appear more than once in all bookings)
     const phoneCounts = customerPhones.reduce((acc, phone) => {

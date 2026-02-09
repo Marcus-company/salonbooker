@@ -191,7 +191,7 @@ export default function BookingPage() {
       removeService(serviceId)
     } else {
       setSelectedServices(selectedServices.map(s => 
-        s.id === service.id ? { ...s, quantity } : s
+        s.id === serviceId ? { ...s, quantity } : s
       ))
     }
   }

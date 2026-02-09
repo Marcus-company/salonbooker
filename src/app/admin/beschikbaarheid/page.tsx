@@ -385,7 +385,7 @@ export default function AvailabilityPage() {
       {/* Save Button */}
       <div className="flex items-center gap-4">
         <button
-          onClick={saveAvailability}
+          onClick={() => saveAvailability()}
           disabled={saving}
           className="flex-1 md:flex-none px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >

@@ -1,7 +1,7 @@
 // Instagram Feed Service
 // Uses Instagram Basic Display API
 
-interface InstagramMedia {
+export interface InstagramMedia {
   id: string;
   caption?: string;
   media_type: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
