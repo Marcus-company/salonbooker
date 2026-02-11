@@ -1,11 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-
-// Force dynamic rendering for auth
-export const dynamic = 'force-dynamic'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,6 +10,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSafari, setIsSafari] = useState(false)
+
+  // Detect Safari for compatibility warnings
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    const isSafariBrowser = /safari/.test(ua) && !/chrome/.test(ua)
+    setIsSafari(isSafariBrowser)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
