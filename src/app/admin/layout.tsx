@@ -33,6 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     ...(userRole === 'admin' ? [{ href: '/admin/analytics', label: 'Analytics', icon: '📈' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/rapporten', label: 'Rapporten', icon: '📊' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/marketing', label: 'Marketing', icon: '📧' }] : []),
+    ...(userRole === 'admin' ? [{ href: '/admin/producten', label: 'Producten', icon: '📦' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/webhooks', label: 'Webhooks', icon: '🔗' }] : []),
     ...(userRole === 'admin' ? [{ href: '/admin/instellingen', label: 'Instellingen', icon: '⚙️' }] : []),
   ]
